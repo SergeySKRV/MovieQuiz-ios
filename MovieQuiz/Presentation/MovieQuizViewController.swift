@@ -3,6 +3,8 @@ import UIKit
 final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     //MARK: - Outlets
+    @IBOutlet weak var noButton: UIButton!
+    @IBOutlet weak var yesButton: UIButton!
     @IBOutlet private var imageView: UIImageView!
     @IBOutlet private var textLabel: UILabel!
     @IBOutlet private var counterLabel: UILabel!
@@ -11,18 +13,23 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     private var currentQuestionIndex = 0
     private var correctAnswers = 0
     private let questionsAmount: Int = 10
-    private var questionFactory: QuestionFactory = QuestionFactory()
+    private var questionFactory: QuestionFactoryProtocol?
     private var currentQuestion: QuizQuestion?
-    
+    private var statisticService: StatisticServiceImplementation?
+    private lazy var alertPresenter = AlertPresenter(viewController: self)
     
     //MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let questionFactory = QuestionFactory()
-        questionFactory.setup(delegate: self)
-        self.questionFactory = questionFactory
-        questionFactory.requestNextQuestion()
+        statisticService = StatisticServiceImplementation()
+        
+        questionFactory = QuestionFactory(delegate: self)
+        questionFactory?.requestNextQuestion()
+    }
+    
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        .lightContent
     }
     
     //MARK: - QuestionFactoryDelegate
@@ -45,11 +52,6 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         let givenAnswer = true
         
         showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            sender.isEnabled = true
-            
-        }
     }
     
     @IBAction private func noButtonClicked(_ sender: UIButton) {
@@ -58,10 +60,6 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         let givenAnswer = false
         
         showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            sender.isEnabled = true
-        }
     }
     
     //MARK: - Private methods
@@ -69,7 +67,6 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         imageView.image = step.image
         textLabel.text = step.question
         counterLabel.text = step.questionNumber
-        imageView.layer.borderWidth = 0
     }
     
     private func showAnswerResult(isCorrect: Bool) {
@@ -80,20 +77,45 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         imageView.layer.borderWidth = 8
         imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            self.showNextQuestionOrResult()
+        self.yesButton.isEnabled = false
+        self.noButton.isEnabled = false
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            self?.showNextQuestionOrResult()
+            
+            self?.imageView.layer.borderWidth = 0
+            
+            self?.yesButton.isEnabled = true
+            self?.noButton.isEnabled = true
         }
     }
     
     private func showNextQuestionOrResult() {
         if currentQuestionIndex == questionsAmount - 1 {
-            let text = correctAnswers == questionsAmount ? "Поздравляем, вы ответили на 10 из 10!" :
-            "Вы ответили на \(correctAnswers) из 10, попробуйте еще раз!"
-            let viewModel = QuizResultsViewModel(title: "Этот раунд окончен", text: text, buttonText: "Сыграть еще раз")
-            show(quiz: viewModel)
+            if let statisticService = statisticService {
+                statisticService.store(correct: correctAnswers, total: questionsAmount)
+                
+                let gamesCount = statisticService.gamesCount
+                let bestGame = statisticService.bestGame
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "dd.MM.YY HH:mm"
+                
+                let text = """
+                            Ваш результат: \(correctAnswers)/10
+                            Количество сыгранных квизов: \(gamesCount)
+                            Ваш рекорд: \(bestGame.correct)/\(bestGame.total) (\(dateFormatter.string(from: bestGame.date)))
+                            Средняя точность: (\(String(format: "%.2f", statisticService.totalAccuracy))%)
+                        """
+                
+                let viewModel = QuizResultsViewModel(
+                    title: "Этот раунд окончен",
+                    text: text,
+                    buttonText: "Сыграть еще раз")
+                show(quiz: viewModel)
+            }
         } else {
             currentQuestionIndex += 1
-            questionFactory.requestNextQuestion()
+            questionFactory?.requestNextQuestion()
         }
     }
     
@@ -106,24 +128,21 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     }
     
     private func show(quiz result: QuizResultsViewModel) {
+        let completion = {
+            self.currentQuestionIndex = 0
+            self.correctAnswers = 0
+            self.questionFactory?.requestNextQuestion()
+        }
         let alertModel = AlertModel(
             title: result.title,
             message: result.text,
             buttonText: result.buttonText,
-            completion: { [weak self] in
-                self?.resetGame()
-            }
-        )
-        let alertPresenter = AlertPresenter(viewController: self)
+            completion: completion)
+        
         alertPresenter.present(alertModel: alertModel)
     }
-    
-    private func resetGame() {
-        currentQuestionIndex = 0
-        correctAnswers = 0
-        questionFactory.requestNextQuestion()
-    }
 }
+
 
 /*
  Mock-данные

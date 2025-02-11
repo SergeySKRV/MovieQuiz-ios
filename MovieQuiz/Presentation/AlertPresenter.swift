@@ -7,8 +7,8 @@
 
 import UIKit
 
-final class AlertPresenter {
-    private weak var viewController: UIViewController?
+class AlertPresenter {
+ weak var viewController: UIViewController?
     
     init(viewController: UIViewController?) {
         self.viewController = viewController
@@ -27,7 +27,7 @@ final class AlertPresenter {
             title: alertModel.buttonText,
             style: .default
         )  { _ in
-            alertModel.completion?()
+            alertModel.completion()
         }
         
         alert.addAction(action)

@@ -7,9 +7,9 @@
 
 import Foundation
 
-struct AlertModel {
+public struct AlertModel {
     let title: String
     let message: String
     let buttonText: String
-    let completion: (() -> Void)?
+    let completion: () -> Void
 }
