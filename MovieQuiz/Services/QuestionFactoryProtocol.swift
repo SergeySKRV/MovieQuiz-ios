@@ -8,9 +8,8 @@
 import Foundation
 
 protocol QuestionFactoryProtocol {
-    func requestNextQuestion() 
+    func requestNextQuestion()
 }
 
-private var questionFactory: QuestionFactoryProtocol?
 
 

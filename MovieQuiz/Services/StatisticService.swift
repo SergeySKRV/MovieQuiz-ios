@@ -10,7 +10,6 @@ import Foundation
 
 final class StatisticServiceImplementation: StatisticServiceProtocol {
     private let storage: UserDefaults = .standard
-    private let magicNumber = 10.0
     
     private enum Keys: String {
         case correct, bestGame, total, gamesCount
@@ -27,18 +26,16 @@ final class StatisticServiceImplementation: StatisticServiceProtocol {
     
     var bestGame: GameResult {
         get {
-         guard let data = storage.data(forKey: Keys.bestGame.rawValue),
-               let record = try? JSONDecoder().decode(GameResult.self, from: data) else {
-             return .init(correct: 0, total: 0, date: Date())
-         }
-               return record
+            let correct = storage.integer(forKey: Keys.correct.rawValue)
+            if let date = storage.object(forKey: Keys.bestGame.rawValue) as? Date {
+                return GameResult(correct: correct, total: 10, date: date)
+            } else {
+                return GameResult(correct: 0, total: 10, date: Date())
             }
+        }
         set {
-            guard let data = try? JSONEncoder().encode(newValue) else {
-                print("Невозможно сохранить результат")
-                return
-            }
-            storage.set(data, forKey: Keys.bestGame.rawValue)
+            storage.set(newValue.correct, forKey: Keys.correct.rawValue)
+            storage.set(newValue.date, forKey: Keys.bestGame.rawValue)
         }
     }
     
@@ -52,17 +49,16 @@ final class StatisticServiceImplementation: StatisticServiceProtocol {
     }
     
     var totalAccuracy: Double {
-        get {
-            return Double(totalScore) / Double(gamesCount) * magicNumber
-        }
+        let totalQuestions = gamesCount * 10
+        return totalQuestions > 0 ? (Double(totalScore) / Double(totalQuestions)) * 100 : 0
     }
+    
     func store(correct count: Int, total amount: Int) {
         gamesCount += 1
         totalScore += count
         
-        let currentGameRecord = GameResult(correct: count, total: amount, date: Date())
-        let lastGamesRecord = bestGame
-        if lastGamesRecord < currentGameRecord {
+        let currentGameRecord = GameResult(correct: count, total: 10, date: Date())
+        if currentGameRecord > bestGame {
             bestGame = currentGameRecord
         }
     }

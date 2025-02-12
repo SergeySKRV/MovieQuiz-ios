@@ -13,3 +13,5 @@ protocol StatisticServiceProtocol {
     var bestGame: GameResult { get }
     var totalAccuracy: Double { get }
 }
+
+

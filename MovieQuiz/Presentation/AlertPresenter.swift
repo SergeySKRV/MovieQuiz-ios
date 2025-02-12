@@ -7,15 +7,15 @@
 
 import UIKit
 
-class AlertPresenter {
- weak var viewController: UIViewController?
+final class AlertPresenter {
+    weak var viewController: UIViewController?
     
     init(viewController: UIViewController?) {
         self.viewController = viewController
     }
     
     func present(alertModel: AlertModel) {
-        guard let viewController = viewController else { return }
+        guard let viewController else { return }
         
         let alert = UIAlertController(
             title: alertModel.title,

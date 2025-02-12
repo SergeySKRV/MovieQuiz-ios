@@ -3,19 +3,19 @@ import UIKit
 final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     //MARK: - Outlets
-    @IBOutlet weak var noButton: UIButton!
-    @IBOutlet weak var yesButton: UIButton!
+    @IBOutlet private weak var noButton: UIButton!
+    @IBOutlet private weak var yesButton: UIButton!
     @IBOutlet private var imageView: UIImageView!
     @IBOutlet private var textLabel: UILabel!
     @IBOutlet private var counterLabel: UILabel!
     
     //MARK: - Properties
-    private var currentQuestionIndex = 0
-    private var correctAnswers = 0
+    private var currentQuestionIndex: Int = .zero
+    private var correctAnswers: Int = .zero
     private let questionsAmount: Int = 10
     private var questionFactory: QuestionFactoryProtocol?
     private var currentQuestion: QuizQuestion?
-    private var statisticService: StatisticServiceImplementation?
+    private var statisticService: StatisticServiceProtocol?
     private lazy var alertPresenter = AlertPresenter(viewController: self)
     
     //MARK: - Lifecycle
@@ -34,8 +34,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     //MARK: - QuestionFactoryDelegate
     func didReceiveNextQuestion(question: QuizQuestion?) {
-        guard let question = question else { return
-        }
+        guard let question = question else { return }
         
         currentQuestion = question
         let viewModel = convert(model: question)
@@ -47,7 +46,6 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     //MARK: - Actions
     @IBAction private func yesButtonClicked(_ sender: UIButton) {
-        sender.isEnabled = false
         guard let currentQuestion = currentQuestion else { return }
         let givenAnswer = true
         
@@ -55,7 +53,6 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     }
     
     @IBAction private func noButtonClicked(_ sender: UIButton) {
-        sender.isEnabled = false
         guard let currentQuestion = currentQuestion else { return }
         let givenAnswer = false
         
@@ -77,17 +74,18 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         imageView.layer.borderWidth = 8
         imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
         
-        self.yesButton.isEnabled = false
-        self.noButton.isEnabled = false
+        changeStateButton(isEnabled: false)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            self?.changeStateButton(isEnabled: true)
             self?.showNextQuestionOrResult()
-            
             self?.imageView.layer.borderWidth = 0
-            
-            self?.yesButton.isEnabled = true
-            self?.noButton.isEnabled = true
         }
+    }
+    
+    private func changeStateButton(isEnabled: Bool) {
+        noButton.isEnabled = isEnabled
+        yesButton.isEnabled = isEnabled
     }
     
     private func showNextQuestionOrResult() {
@@ -101,7 +99,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
                 dateFormatter.dateFormat = "dd.MM.YY HH:mm"
                 
                 let text = """
-                            Ваш результат: \(correctAnswers)/10
+                            Ваш результат: \(correctAnswers)/\(questionsAmount)
                             Количество сыгранных квизов: \(gamesCount)
                             Ваш рекорд: \(bestGame.correct)/\(bestGame.total) (\(dateFormatter.string(from: bestGame.date)))
                             Средняя точность: (\(String(format: "%.2f", statisticService.totalAccuracy))%)
