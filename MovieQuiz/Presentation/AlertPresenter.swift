@@ -4,7 +4,7 @@
 //
 //  Created by Сергей Скориков on 08.02.2025.
 //
-
+import Foundation
 import UIKit
 
 final class AlertPresenter {
@@ -14,7 +14,7 @@ final class AlertPresenter {
         self.viewController = viewController
     }
     
-    func present(alertModel: AlertModel) {
+    func present (alertModel: AlertModel) {
         guard let viewController else { return }
         
         let alert = UIAlertController(
@@ -33,5 +33,11 @@ final class AlertPresenter {
         alert.addAction(action)
         
         viewController.present(alert, animated: true, completion: nil)
+    }
+}
+
+extension AlertPresenter {
+    func show(in viewController: UIViewController, model: AlertModel) {
+        self.present(alertModel: model)
     }
 }
