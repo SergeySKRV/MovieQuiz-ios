@@ -35,9 +35,3 @@ final class AlertPresenter {
         viewController.present(alert, animated: true, completion: nil)
     }
 }
-
-extension AlertPresenter {
-    func show(in viewController: UIViewController, model: AlertModel) {
-        self.present(alertModel: model)
-    }
-}

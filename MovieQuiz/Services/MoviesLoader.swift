@@ -26,8 +26,19 @@ struct MoviesLoader: MoviesLoading {
             switch result {
             case .success(let data):
                 do {
-                    let movies = try JSONDecoder().decode(MostPopularMovies.self, from: data)
-                    handler(.success(movies))
+                    let moviesResponse = try JSONDecoder().decode(MostPopularMovies.self, from: data)
+                    
+                    if let errorMessage = moviesResponse.errorMessage, !errorMessage.isEmpty {
+                        handler(.failure(MoviesLoaderError.serverError(errorMessage)))
+                        return
+                    }
+                    
+                    if moviesResponse.items.isEmpty {
+                        handler(.failure(MoviesLoaderError.emptyMoviesList))
+                        return
+                    }
+                    
+                    handler(.success(moviesResponse))
                 } catch {
                     handler(.failure(error))
                 }
@@ -36,4 +47,11 @@ struct MoviesLoader: MoviesLoading {
             }
         }
     }
+}
+
+enum MoviesLoaderError: Error {
+    case invalidAPIKey
+    case rateLimitExceeded
+    case serverError(String?)
+    case emptyMoviesList
 }
