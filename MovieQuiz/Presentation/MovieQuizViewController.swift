@@ -11,9 +11,8 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     @IBOutlet private var counterLabel: UILabel!
     
     //MARK: - Properties
-    private var currentQuestionIndex: Int = .zero
+    private let presenter = MovieQuizPresenter()
     private var correctAnswers: Int = .zero
-    private let questionsAmount: Int = 10
     private var questionFactory: QuestionFactoryProtocol?
     private var currentQuestion: QuizQuestion?
     private var statisticService: StatisticServiceProtocol?
@@ -22,6 +21,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     //MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        presenter.viewController = self
         activityIndicator.hidesWhenStopped = true
         
         statisticService = StatisticServiceImplementation()
@@ -40,7 +40,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         guard let question else { return }
         
         currentQuestion = question
-        let viewModel = convert(model: question)
+        let viewModel = presenter.convert(model: question)
         
         DispatchQueue.main.async { [weak self] in
             self?.hideLoadingIndicator()
@@ -81,18 +81,14 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     }
     
     //MARK: - Actions
-    @IBAction private func yesButtonClicked(_ sender: UIButton) {
-        guard let currentQuestion = currentQuestion else { return }
-        let givenAnswer = true
-        
-        showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
+    @IBAction func yesButtonClicked(_ sender: UIButton) {
+        presenter.currentQuestion = currentQuestion
+        presenter.yesButtonClicked()
     }
     
-    @IBAction private func noButtonClicked(_ sender: UIButton) {
-        guard let currentQuestion = currentQuestion else { return }
-        let givenAnswer = false
-        
-        showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
+    @IBAction func noButtonClicked(_ sender: UIButton) {
+        presenter.currentQuestion = currentQuestion
+        presenter.noButtonClicked()
     }
     
     //MARK: - Private methods
@@ -117,7 +113,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
             guard let self else { return }
             
             self.correctAnswers = 0
-            
+            self.presenter.resetQuestionIndex()
             self.showLoadingIndicator()
             self.questionFactory?.loadData()
         }
@@ -131,7 +127,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         counterLabel.text = step.questionNumber
     }
     
-    private func showAnswerResult(isCorrect: Bool) {
+    func showAnswerResult(isCorrect: Bool) {
         if isCorrect {
             correctAnswers += 1
         }
@@ -154,9 +150,9 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     }
     
     private func showNextQuestionOrResult() {
-        if currentQuestionIndex == questionsAmount - 1 {
+        if presenter.isLastQuestion() {
             if let statisticService = statisticService {
-                statisticService.store(correct: correctAnswers, total: questionsAmount)
+                statisticService.store(correct: correctAnswers, total: presenter.questionsAmount)
                 
                 let gamesCount = statisticService.gamesCount
                 let bestGame = statisticService.bestGame
@@ -164,7 +160,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
                 dateFormatter.dateFormat = "dd.MM.YY HH:mm"
                 
                 let text = """
-                            Ваш результат: \(correctAnswers)/\(questionsAmount)
+                            Ваш результат: \(correctAnswers)/\(presenter.questionsAmount)
                             Количество сыгранных квизов: \(gamesCount)
                             Ваш рекорд: \(bestGame.correct)/\(bestGame.total) (\(dateFormatter.string(from: bestGame.date)))
                             Средняя точность: (\(String(format: "%.2f", statisticService.totalAccuracy))%)
@@ -177,30 +173,24 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
                 show(quiz: viewModel)
             }
         } else {
-            currentQuestionIndex += 1
+            presenter.switchToNextQuestion()
             questionFactory?.requestNextQuestion()
         }
     }
     
-    private func convert(model: QuizQuestion) -> QuizStepViewModel {
-        return QuizStepViewModel(
-            image: UIImage(data: model.image) ?? UIImage(),
-            question: model.text,
-            questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)")
-    }
-    
     private func show(quiz result: QuizResultsViewModel) {
         let completion = {
-            self.currentQuestionIndex = 0
-            self.correctAnswers = 0
-            self.questionFactory?.requestNextQuestion()
+            self.presenter.resetQuestionIndex()
+               self.correctAnswers = 0
+               self.questionFactory?.requestNextQuestion()
+           }
+           let alertModel = AlertModel(
+               title: result.title,
+               message: result.text,
+               buttonText: result.buttonText,
+               completion: completion)
+           
+           alertPresenter.present(alertModel: alertModel)
         }
-        let alertModel = AlertModel(
-            title: result.title,
-            message: result.text,
-            buttonText: result.buttonText,
-            completion: completion)
-        
-        alertPresenter.present(alertModel: alertModel)
     }
-}
+
