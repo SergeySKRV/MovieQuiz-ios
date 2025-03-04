@@ -1,6 +1,6 @@
 import UIKit
 
-final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
+final class MovieQuizViewController: UIViewController {
     
     //MARK: - Outlets
     @IBOutlet private var activityIndicator: UIActivityIndicatorView!
@@ -11,61 +11,19 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     @IBOutlet private var counterLabel: UILabel!
     
     //MARK: - Properties
-    private let presenter = MovieQuizPresenter()
-    private var correctAnswers: Int = .zero
-    private var questionFactory: QuestionFactory?
+    private var presenter: MovieQuizPresenter!
     private var statisticService: StatisticServiceProtocol?
     private lazy var alertPresenter = AlertPresenter(viewController: self)
     
     //MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        presenter.viewController = self
+        presenter = MovieQuizPresenter(viewController: self)
         activityIndicator.hidesWhenStopped = true
-        
-        statisticService = StatisticServiceImplementation()
-        
-        questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
-        showLoadingIndicator()
-        questionFactory?.loadData()
     }
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
         .lightContent
-    }
-    func didReceiveNextQuestion(question: QuizQuestion?) {
-        presenter.didReceiveNextQuestion(question: question)
-    }
-    func didFailToLoadData(with error: Error) {
-        hideLoadingIndicator()
-        if let serviceError = error as? MoviesLoaderError {
-            switch serviceError {
-            case .invalidAPIKey:
-                showNetworkError(message: "Неверный API ключ. Обратитесь к администратору.")
-            case .rateLimitExceeded:
-                showNetworkError(message: "Превышено количество запросов к серверу. Попробуйте позже.")
-            case .serverError(let message):
-                showNetworkError(message: message ?? "Произошла ошибка на сервере.")
-            case .emptyMoviesList:
-                showNetworkError(message: "Список фильмов пуст. Попробуйте еще раз.")
-            }
-        } else {
-            showNetworkError(message: error.localizedDescription)
-        }
-    }
-    
-    func didLoadDataFromServer() {
-        hideLoadingIndicator()
-        
-        questionFactory?.requestNextQuestion()
-    }
-    
-    func didStartLoadingNextQuestion() {
-        showLoadingIndicator()
-    }
-    
-    func didFinishLoadingNextQuestion(_ question: QuizQuestion?    ) {
-        hideLoadingIndicator()
     }
     
     //MARK: - Actions
@@ -89,7 +47,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         }
     }
     
-    private func showNetworkError(message: String) {
+    func showNetworkError(message: String) {
         hideLoadingIndicator()
         
         let model = AlertModel(title: "Ошибка",
@@ -97,10 +55,8 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
                                buttonText: "Попробовать еще раз") { [weak self] in
             guard let self else { return }
             
-            self.correctAnswers = 0
-            self.presenter.resetQuestionIndex()
+            self.presenter.restartGame()
             self.showLoadingIndicator()
-            self.questionFactory?.loadData()
         }
         
         alertPresenter.present(alertModel: model)
@@ -114,8 +70,9 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     func showAnswerResult(isCorrect: Bool) {
         if isCorrect {
-            correctAnswers += 1
+            presenter.correctAnswers += 1
         }
+       
         imageView.layer.masksToBounds = true
         imageView.layer.borderWidth = 8
         imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
@@ -125,8 +82,6 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             guard let self else { return }
             self.changeStateButton(isEnabled: true)
-            self.presenter.correctAnswers = self.correctAnswers
-            self.presenter.questionFactory = self.questionFactory
             self.presenter.showNextQuestionOrResult()
             self.imageView.layer.borderWidth = 0
         }
@@ -138,11 +93,8 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     }
     
     func show(quiz result: QuizResultsViewModel) {
-        print("show(quiz result:) called with title: \(result.title)")
         let completion = {
-            self.presenter.resetQuestionIndex()
-            self.correctAnswers = 0
-            self.questionFactory?.requestNextQuestion()
+            self.presenter.restartGame()
         }
         let alertModel = AlertModel(
             title: result.title,
@@ -151,7 +103,6 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
             completion: completion)
        
         DispatchQueue.main.async {
-            print("Presenting alert on main thread")
             self.alertPresenter.present(alertModel: alertModel)
         }
     }

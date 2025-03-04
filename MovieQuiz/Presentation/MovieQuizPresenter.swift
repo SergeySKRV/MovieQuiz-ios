@@ -7,14 +7,24 @@
 import Foundation
 import UIKit
 
-final class MovieQuizPresenter {
+final class MovieQuizPresenter: QuestionFactoryDelegate {
     let questionsAmount: Int = 10
     private var currentQuestionIndex: Int = .zero
     var currentQuestion: QuizQuestion?
     var correctAnswers: Int = .zero
-    var questionFactory: QuestionFactory?
-    weak var viewController: MovieQuizViewController?
+    private var questionFactory: QuestionFactoryProtocol?
+    private weak var viewController: MovieQuizViewController?
     var statisticService: StatisticServiceProtocol?
+    
+    init(viewController: MovieQuizViewController) {
+        self.viewController = viewController
+        
+        questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
+        questionFactory?.loadData()
+        viewController.showLoadingIndicator()
+        statisticService = StatisticServiceImplementation()
+
+    }
     
     func convert(model: QuizQuestion) -> QuizStepViewModel {
         return QuizStepViewModel(
@@ -27,8 +37,10 @@ final class MovieQuizPresenter {
         currentQuestionIndex == questionsAmount - 1
     }
     
-    func resetQuestionIndex() {
+    func restartGame() {
         currentQuestionIndex = 0
+        correctAnswers = .zero
+        questionFactory?.requestNextQuestion()
     }
     
     func switchToNextQuestion() {
@@ -43,7 +55,7 @@ final class MovieQuizPresenter {
         didAnswer(isYes: false)
     }
     
-    private func didAnswer(isYes: Bool){
+   func didAnswer(isYes: Bool){
         guard let currentQuestion = currentQuestion else { return }
         
         let givenAnswer = isYes
@@ -64,10 +76,42 @@ final class MovieQuizPresenter {
         }
     }
     
+    func didFailToLoadData(with error: Error) {
+        viewController?.hideLoadingIndicator()
+        if let serviceError = error as? MoviesLoaderError {
+            switch serviceError {
+            case .invalidAPIKey:
+                viewController?.showNetworkError(message: "Неверный API ключ. Обратитесь к администратору.")
+            case .rateLimitExceeded:
+                viewController?.showNetworkError(message: "Превышено количество запросов к серверу. Попробуйте позже.")
+            case .serverError(let message):
+                viewController?.showNetworkError(message: message ?? "Произошла ошибка на сервере.")
+            case .emptyMoviesList:
+                viewController?.showNetworkError(message: "Список фильмов пуст. Попробуйте еще раз.")
+            }
+        } else {
+            viewController?.showNetworkError(message: error.localizedDescription)
+        }
+    }
+    
+    func didLoadDataFromServer() {
+        viewController?.hideLoadingIndicator()
+        questionFactory?.requestNextQuestion()
+    }
+    
+    func didStartLoadingNextQuestion() {
+        viewController?.showLoadingIndicator()
+        }
+        
+        func didFinishLoadingNextQuestion(_ question: QuizQuestion?    ) {
+            viewController?.hideLoadingIndicator()
+        }
+    
+    
+    
     func showNextQuestionOrResult() {
         if self.isLastQuestion() {
-            statisticService = StatisticServiceImplementation()
-           if let statisticService = statisticService {
+            if let statisticService = statisticService {
                 statisticService.store(correct: correctAnswers, total: questionsAmount)
                 
                 let gamesCount = statisticService.gamesCount
