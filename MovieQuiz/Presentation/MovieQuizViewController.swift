@@ -12,7 +12,6 @@ final class MovieQuizViewController: UIViewController {
     
     //MARK: - Properties
     private var presenter: MovieQuizPresenter!
-    private var statisticService: StatisticServiceProtocol?
     private lazy var alertPresenter = AlertPresenter(viewController: self)
     
     //MARK: - Lifecycle
@@ -68,26 +67,7 @@ final class MovieQuizViewController: UIViewController {
         counterLabel.text = step.questionNumber
     }
     
-    func showAnswerResult(isCorrect: Bool) {
-        if isCorrect {
-            presenter.correctAnswers += 1
-        }
-       
-        imageView.layer.masksToBounds = true
-        imageView.layer.borderWidth = 8
-        imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
-        
-        changeStateButton(isEnabled: false)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            guard let self else { return }
-            self.changeStateButton(isEnabled: true)
-            self.presenter.showNextQuestionOrResult()
-            self.imageView.layer.borderWidth = 0
-        }
-    }
-    
-    private func changeStateButton(isEnabled: Bool) {
+    func changeStateButton(isEnabled: Bool) {
         noButton.isEnabled = isEnabled
         yesButton.isEnabled = isEnabled
     }
@@ -101,10 +81,20 @@ final class MovieQuizViewController: UIViewController {
             message: result.text,
             buttonText: result.buttonText,
             completion: completion)
-       
+        
         DispatchQueue.main.async {
             self.alertPresenter.present(alertModel: alertModel)
         }
     }
+    
+    func highlightImageBorder(isCorrectAnswer: Bool) {
+        imageView.layer.masksToBounds = true
+        imageView.layer.borderWidth = 8
+        imageView.layer.borderColor = isCorrectAnswer ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            guard let self else { return }
+            self.imageView.layer.borderWidth = 0
+        }
     }
-
+}
