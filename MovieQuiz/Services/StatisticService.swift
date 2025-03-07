@@ -9,12 +9,16 @@ import Foundation
 
 
 final class StatisticServiceImplementation: StatisticServiceProtocol {
+    
+    //MARK: - Private Properties
     private let storage: UserDefaults = .standard
     
+    //MARK: - Keys
     private enum Keys: String {
         case correct, bestGame, total, gamesCount
     }
     
+    //MARK: - Public Properties
     var gamesCount: Int {
         get {
             storage.integer(forKey: Keys.gamesCount.rawValue)
@@ -53,6 +57,7 @@ final class StatisticServiceImplementation: StatisticServiceProtocol {
         return totalQuestions > 0 ? (Double(totalScore) / Double(totalQuestions)) * 100 : 0
     }
     
+    //MARK: - Public Methods
     func store(correct count: Int, total amount: Int) {
         gamesCount += 1
         totalScore += count

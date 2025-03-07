@@ -8,6 +8,7 @@
 import Foundation
 
 protocol QuestionFactoryProtocol {
+    //MARK: - Public Methods
     func requestNextQuestion()
     func loadData()
 }

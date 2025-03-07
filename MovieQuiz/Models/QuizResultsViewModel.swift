@@ -8,6 +8,7 @@
 import Foundation
 
 struct QuizResultsViewModel {
+    //MARK: - Public Properties
     let title: String
     let text: String
     let buttonText: String

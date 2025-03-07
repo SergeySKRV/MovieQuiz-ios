@@ -9,6 +9,7 @@ import Foundation
 import UIKit
 
 struct QuizStepViewModel {
+    //MARK: - Public Properties
     let image: UIImage
     let question: String
     let questionNumber: String

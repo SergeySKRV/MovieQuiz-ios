@@ -8,10 +8,12 @@
 import Foundation
 
 struct GameResult: Codable, Comparable {
+    //MARK: - Public Properties
     let correct: Int
     let total: Int
     let date: Date
     
+    //MARK: - Comparable
     static func < (lhs: GameResult, rhs: GameResult) -> Bool {
         return lhs.correct < rhs.correct
     }

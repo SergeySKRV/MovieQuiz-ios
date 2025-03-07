@@ -8,15 +8,18 @@
 import Foundation
 
 final class QuestionFactory: QuestionFactoryProtocol {
+    //MARK: - Private Properties
     private let moviesLoader: MoviesLoading
     private weak var delegate: QuestionFactoryDelegate?
     private var movies: [MostPopularMovie] = []
     
+    //MARK: - Initialization
     init(moviesLoader: MoviesLoading, delegate: QuestionFactoryDelegate?) {
         self.moviesLoader = moviesLoader
         self.delegate = delegate
     }
     
+    //MARK: - Public Methods
     func loadData() {
         moviesLoader.loadMovies { [weak self] result in
             DispatchQueue.main.async { [weak self] in
@@ -72,6 +75,7 @@ final class QuestionFactory: QuestionFactoryProtocol {
                     let errorMessage = "Не удалось загрузить изображение."
                     self.delegate?.didFailToLoadData(with: NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: errorMessage]))
                     
+                    self.requestNextQuestion()
                 }
                 return
             }
@@ -97,7 +101,6 @@ final class QuestionFactory: QuestionFactoryProtocol {
                 
                 DispatchQueue.main.async { [weak self] in
                     guard let self else { return }
-                    
                     self.delegate?.didFinishLoadingNextQuestion(question)
                     self.delegate?.didReceiveNextQuestion(question: question)
                 }
@@ -105,7 +108,7 @@ final class QuestionFactory: QuestionFactoryProtocol {
         }
     }
     
-    // MARK: - Private methods
+    // MARK: - Private Methods
     private func generateThresholdRating(for rating: String) -> Int {
         if let ratingFloat = Float(rating) {
             let ratingInt = Int(ratingFloat.rounded())
@@ -132,7 +135,7 @@ final class QuestionFactory: QuestionFactoryProtocol {
     }
 }
 
-// MARK: - ComparisonType enum
+//MARK: - ComparisonType enum
 enum ComparisonType: String {
     case greaterThan = "больше"
     case lessThan = "меньше"

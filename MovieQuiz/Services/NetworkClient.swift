@@ -12,10 +12,11 @@ protocol NetworkRouting {
 
 struct NetworkClient: NetworkRouting {
     
-    private enum NetworkError: Error {
-        case codeError
+    //MARK: - Nested Types
+    enum NetworkError: Error {
+        case codeError(Int)
     }
-    
+    //MARK: - Public Methods
     func fetch(url: URL, handler: @escaping (Result<Data, Error>) -> Void) {
         let request = URLRequest(url: url)
         
@@ -24,13 +25,11 @@ struct NetworkClient: NetworkRouting {
                 handler(.failure(error))
                 return
             }
-            
             if let response = response as? HTTPURLResponse,
                response.statusCode < 200 || response.statusCode >= 300 {
-                handler(.failure(NetworkError.codeError))
+                handler(.failure(NetworkError.codeError(response.statusCode)))
                 return
             }
-            
             guard let data else { return }
             handler(.success(data))
         }

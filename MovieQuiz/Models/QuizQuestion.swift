@@ -8,6 +8,7 @@
 import Foundation
 
 struct QuizQuestion {
+    //MARK: - Public Properties
     let image: Data
     let text: String
     let correctAnswer: Bool

@@ -8,10 +8,13 @@
 import Foundation
 
 protocol StatisticServiceProtocol {
-    func store(correct count: Int, total amount: Int)
+    //MARK: - Public Properties
     var gamesCount: Int { get }
     var bestGame: GameResult { get }
     var totalAccuracy: Double { get }
+    
+    //MARK: - Public Methods
+    func store(correct count: Int, total amount: Int)
 }
 
 
