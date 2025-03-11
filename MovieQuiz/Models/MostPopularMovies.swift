@@ -8,11 +8,13 @@
 import Foundation
 
 struct MostPopularMovies: Codable {
+    //MARK: - Public Properties
     let errorMessage: String?
     let items: [MostPopularMovie]
 }
 
 struct MostPopularMovie: Codable {
+    //MARK: - Public Properties
     let title: String
     let rating: String
     let imageURL: URL
@@ -27,6 +29,7 @@ struct MostPopularMovie: Codable {
         return newURL
     }
     
+    //MARK: - CodingKeys
     private enum CodingKeys: String, CodingKey {
         case title = "fullTitle"
         case rating = "imDbRating"

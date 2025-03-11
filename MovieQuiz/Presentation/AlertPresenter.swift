@@ -8,30 +8,31 @@ import Foundation
 import UIKit
 
 final class AlertPresenter {
+    //MARK: - Private Properties
     weak var viewController: UIViewController?
     
+    //MARK: - Initialization
     init(viewController: UIViewController?) {
         self.viewController = viewController
     }
     
-    func present (alertModel: AlertModel) {
-        guard let viewController else { return }
-        
+    //MARK: - Public Methods
+    func showResultsAlert(alert model: AlertModel) {
         let alert = UIAlertController(
-            title: alertModel.title,
-            message: alertModel.message,
+            title: model.title,
+            message: model.message,
             preferredStyle: .alert
         )
         
         let action = UIAlertAction(
-            title: alertModel.buttonText,
-            style: .default
-        )  { _ in
-            alertModel.completion()
-        }
+            title: model.buttonText,
+            style: .default,
+            handler: { _ in model.completion()}
+        )
         
+        guard let viewController else { return }
+        alert.view.accessibilityIdentifier = "Game results"
         alert.addAction(action)
-        
         viewController.present(alert, animated: true, completion: nil)
     }
 }
