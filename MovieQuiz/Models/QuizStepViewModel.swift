@@ -10,7 +10,7 @@ import UIKit
 
 struct QuizStepViewModel {
     //MARK: - Public Properties
-    let image: UIImage
+    let image: Data
     let question: String
     let questionNumber: String
 }

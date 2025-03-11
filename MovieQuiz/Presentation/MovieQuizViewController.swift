@@ -19,6 +19,9 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
         super.viewDidLoad()
         presenter = MovieQuizPresenter(viewController: self)
         activityIndicator.hidesWhenStopped = true
+        
+        imageView.layer.masksToBounds = true
+        imageView.layer.borderWidth = 8
     }
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -37,7 +40,8 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
     //MARK: - Public methods
     func show(quiz step: QuizStepViewModel) {
         imageView.layer.borderColor = UIColor.clear.cgColor
-        imageView.image = step.image
+        let image = UIImage(data: step.image) ?? UIImage()
+        imageView.image = image
         textLabel.text = step.question
         counterLabel.text = step.questionNumber
     }
@@ -62,8 +66,6 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
     }
     
     func highlightImageBorder(isCorrectAnswer: Bool) {
-        imageView.layer.masksToBounds = true
-        imageView.layer.borderWidth = 8
         imageView.layer.borderColor = isCorrectAnswer ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
     }
     

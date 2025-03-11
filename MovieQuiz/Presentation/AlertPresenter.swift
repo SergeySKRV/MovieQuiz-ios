@@ -17,17 +17,18 @@ final class AlertPresenter {
     }
     
     //MARK: - Public Methods
-    func showResultsAlert(_ alertModel: AlertModel) {
+    func showResultsAlert(alert model: AlertModel) {
         let alert = UIAlertController(
-            title: alertModel.title,
-            message: alertModel.message,
+            title: model.title,
+            message: model.message,
             preferredStyle: .alert
         )
         
         let action = UIAlertAction(
-            title: alertModel.buttonText,
-            style: .default
-        ) { alertAction in alertModel.completion(alertAction) }
+            title: model.buttonText,
+            style: .default,
+            handler: { _ in model.completion()}
+        )
         
         guard let viewController else { return }
         alert.view.accessibilityIdentifier = "Game results"
